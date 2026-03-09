@@ -6,17 +6,17 @@ enum ViewMode: String, CaseIterable {
     case preview = "Preview"
 }
 
-struct ContentView: View {
-    @Binding var document: MarkdownDocument
+struct MainView: View {
+    @ObservedObject var workspace: WorkspaceModel
     @State private var viewMode: ViewMode = .split
     @State private var cursorLine: Int = 1
 
     private var wordCount: Int {
-        document.text.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).count
+        workspace.currentText.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).count
     }
 
     private var charCount: Int {
-        document.text.count
+        workspace.currentText.count
     }
 
     private var readingMinutes: Int {
@@ -24,41 +24,64 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Main content
-            GeometryReader { geo in
-                HStack(spacing: 0) {
-                    if viewMode != .preview {
-                        MarkdownEditorView(
-                            text: $document.text,
-                            onCursorChange: { line in cursorLine = line }
-                        )
-                        .frame(width: viewMode == .split ? geo.size.width / 2 : geo.size.width)
-                    }
+        HStack(spacing: 0) {
+            // Sidebar
+            if workspace.sidebarVisible {
+                SidebarView(workspace: workspace)
+                    .frame(width: 220)
 
-                    if viewMode == .split {
-                        Rectangle()
-                            .fill(Theme.border)
-                            .frame(width: 1)
-                    }
-
-                    if viewMode != .editor {
-                        MarkdownPreviewView(markdown: document.text)
-                            .frame(width: viewMode == .split ? geo.size.width / 2 : geo.size.width)
-                    }
-                }
+                Rectangle()
+                    .fill(Theme.border)
+                    .frame(width: 1)
             }
 
-            // Status bar
-            StatusBar(
-                cursorLine: cursorLine,
-                wordCount: wordCount,
-                charCount: charCount,
-                readingMinutes: readingMinutes
-            )
+            // Editor + Preview
+            VStack(spacing: 0) {
+                GeometryReader { geo in
+                    HStack(spacing: 0) {
+                        if viewMode != .preview {
+                            MarkdownEditorView(
+                                text: $workspace.currentText,
+                                onCursorChange: { line in cursorLine = line }
+                            )
+                            .frame(width: viewMode == .split ? geo.size.width / 2 : geo.size.width)
+                        }
+
+                        if viewMode == .split {
+                            Rectangle()
+                                .fill(Theme.border)
+                                .frame(width: 1)
+                        }
+
+                        if viewMode != .editor {
+                            MarkdownPreviewView(markdown: workspace.currentText)
+                                .frame(width: viewMode == .split ? geo.size.width / 2 : geo.size.width)
+                        }
+                    }
+                }
+
+                StatusBar(
+                    cursorLine: cursorLine,
+                    wordCount: wordCount,
+                    charCount: charCount,
+                    readingMinutes: readingMinutes,
+                    fileName: workspace.currentFileURL?.lastPathComponent
+                )
+            }
         }
         .background(Theme.background)
         .toolbar {
+            ToolbarItemGroup(placement: .navigation) {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        workspace.sidebarVisible.toggle()
+                    }
+                }) {
+                    Image(systemName: "sidebar.left")
+                }
+                .help("Toggle Sidebar")
+            }
+
             ToolbarItem(placement: .principal) {
                 Picker("View Mode", selection: $viewMode) {
                     ForEach(ViewMode.allCases, id: \.self) { mode in
@@ -74,6 +97,11 @@ struct ContentView: View {
                 viewMode = mode
             }
         }
+        .onChange(of: workspace.currentText) { _ in
+            workspace.isDirty = true
+            workspace.autoSave()
+        }
+        .navigationTitle(workspace.currentFileURL?.deletingPathExtension().lastPathComponent ?? "Tiny.md")
     }
 }
 
@@ -82,6 +110,7 @@ struct StatusBar: View {
     let wordCount: Int
     let charCount: Int
     let readingMinutes: Int
+    var fileName: String?
 
     var body: some View {
         HStack {
