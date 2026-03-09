@@ -1,7 +1,8 @@
 # Tiny.md
 
-A minimal, native macOS markdown editor with live previe
-<img width="887" height="607" alt="Screenshot 2026-03-09 at 9 29 17 PM" src="https://github.com/user-attachments/assets/39a3853a-4664-4848-8daa-31b38ea81803" />
+A minimal, native macOS markdown editor with live preview
+
+<img width="300" height="400" alt="Screenshot 2026-03-09 at 9 29 17 PM" src="https://github.com/user-attachments/assets/39a3853a-4664-4848-8daa-31b38ea81803" />
 
 
 
