@@ -1,0 +1,35 @@
+name: TinyMD
+options:
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "16.0"
+  bundleIdPrefix: com.tinymd
+
+packages:
+  Ink:
+    url: https://github.com/johnsundell/Ink.git
+    from: 0.6.0
+
+targets:
+  TinyMD:
+    type: application
+    platform: macOS
+    sources:
+      - TinyMD
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tinymd.TinyMD
+        INFOPLIST_FILE: TinyMD/Info.plist
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_IDENTITY: "-"
+        PRODUCT_NAME: TinyMD
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        ENABLE_PREVIEWS: "YES"
+    entitlements:
+      path: TinyMD/TinyMD.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+    dependencies:
+      - package: Ink
+      - sdk: WebKit.framework
